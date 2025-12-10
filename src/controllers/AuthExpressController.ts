@@ -3,6 +3,7 @@ import { IAuthController } from "../interfaces/IAuthController";
 import { IAuthService } from "../interfaces/IAuthService";
 import { CreateUserDTO } from "../types/CreateUserDTO";
 import { ITransactionManager } from "../interfaces/ITransactionManager";
+import { AppError } from "../errors/AppError";
 
 type Props = {
     authService: IAuthService;
@@ -19,18 +20,13 @@ export class AuthExpressController implements IAuthController {
     }
 
     async createUser(req: Request, res: Response): Promise<any> {
-        try {
-            const data: CreateUserDTO = req.body;
+        const data: CreateUserDTO = req.body;
 
-            await this.authService.createUser(data);
+        const user = await this.authService.createUser(data);
 
-            return res.status(201).json({
-                message: 'User created successfully',
-            });
-        } catch (error) {
-            return res.status(500).json({
-                message: 'Internal server error',
-            });
-        }
+        return res.status(201).json({
+            message: 'User created successfully',
+            user,
+        });
     }
 }
