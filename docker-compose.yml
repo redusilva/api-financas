@@ -4,7 +4,7 @@ services:
   db_api_financas:
     image: postgres:17
     container_name: postgres_api_financas
-    restart: always
+    restart: no
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

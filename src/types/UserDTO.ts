@@ -2,6 +2,8 @@ export type UserDTO = {
     id: number;
     name: string;
     email: string;
+    password?: string;
+    refresh_token_hash?: string;
     role_id: number;
     status_id: number;
     email_verified: boolean;

@@ -4,4 +4,5 @@ import { UserDTO } from "../types/UserDTO";
 export interface IAuthRepository {
     createUser(data: CreateUserDTO): Promise<UserDTO>;
     findUserByEmail(email: string): Promise<UserDTO | null>;
+    updateUser(user: UserDTO): Promise<UserDTO>;
 }

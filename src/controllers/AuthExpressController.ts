@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import { IAuthController } from "../interfaces/IAuthController";
 import { IAuthService } from "../interfaces/IAuthService";
-import { CreateUserDTO } from "../types/CreateUserDTO";
 import { ITransactionManager } from "../interfaces/ITransactionManager";
-import { AppError } from "../errors/AppError";
+import { CreateUserDTO } from "../types/CreateUserDTO";
 
 type Props = {
     authService: IAuthService;
@@ -24,9 +23,39 @@ export class AuthExpressController implements IAuthController {
 
         const user = await this.authService.createUser(data);
 
-        return res.status(201).json({
-            message: 'User created successfully',
+        return res.status(200).json({
+            message: 'User logged in successfully',
             user,
+        });
+    }
+
+    async login(req: Request, res: Response): Promise<any> {
+        try {
+            const { email, password } = req.body;
+            const authData = await this.authService.login(email, password);
+
+            return res.status(200).json({
+                message: 'User logged in successfully',
+                access_token: authData.accessToken,
+                refresh_token: authData.refreshToken,
+            });
+        } catch (error) {
+            console.error('Error during login:', error);
+            return res.status(500).json({
+                message: 'Internal server error',
+            });
+        }
+    }
+
+    async refreshToken(req: Request, res: Response): Promise<any> {
+
+        const refreshToken = req.body.refresh_token;
+        const authData = await this.authService.refreshToken(refreshToken);
+
+        return res.status(200).json({
+            message: 'Token refreshed successfully',
+            access_token: authData.accessToken,
+            refresh_token: authData.refreshToken,
         });
     }
 }
