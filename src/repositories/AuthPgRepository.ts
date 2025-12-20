@@ -6,12 +6,32 @@ import { UserDTO } from "../types/UserDTO";
 export class AuthPgRepository implements IAuthRepository {
     async createUser(data: CreateUserDTO): Promise<UserDTO> {
         const query = `
-            INSERT INTO users (name, email, password, role_id, status_id, email_verified, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+            INSERT INTO users (
+                name, 
+                email, 
+                password,
+                role_id, 
+                status_id,
+                email_verified, 
+                email_verification_token, 
+                email_verification_expires_at,
+                created_at, 
+                updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
             RETURNING *
         `;
 
-        const values = [data.name, data.email, data.password, data.role_id, data.status_id, false];
+        const values = [
+            data.name,
+            data.email,
+            data.password,
+            data.role_id,
+            data.status_id,
+            false,
+            data.email_verification_token || null,
+            data.email_verification_expires_at || null
+        ];
 
         const result = await pool.query(query, values);
 

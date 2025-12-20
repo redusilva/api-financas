@@ -19,14 +19,21 @@ export class AuthExpressController implements IAuthController {
     }
 
     async createUser(req: Request, res: Response): Promise<any> {
-        const data: CreateUserDTO = req.body;
+        try {
+            const data: CreateUserDTO = req.body;
 
-        const user = await this.authService.createUser(data);
+            const user = await this.authService.createUser(data);
 
-        return res.status(200).json({
-            message: 'User logged in successfully',
-            user,
-        });
+            return res.status(200).json({
+                message: 'User logged in successfully',
+                user,
+            });
+        } catch (error) {
+            console.error('Error during user creation:', error);
+            return res.status(500).json({
+                message: 'Internal server error',
+            });
+        }
     }
 
     async login(req: Request, res: Response): Promise<any> {

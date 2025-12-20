@@ -7,22 +7,32 @@ import { LoginReturnDTO } from "../types/LoginReturnDTO";
 import { RefreshTokenPayloadDTO } from "../types/RefreshTokenPayloadDTO";
 import { IHashProvider } from "../interfaces/IHashProvider";
 import { ITokenProvider } from "../interfaces/ITokenProvider";
+import { IRandomCodeService } from "../interfaces/IRandomCodeService";
+import { IEmailService } from "../interfaces/IEmailService";
+import { welcomeEmailTemplate } from "../utils/mailTemplates";
+import { DateTime } from 'luxon';
 
 type Props = {
     authRepository: IAuthRepository;
     hashProvider: IHashProvider;
     tokenProvider: ITokenProvider;
+    randomCodeService: IRandomCodeService;
+    emailService: IEmailService;
 }
 
 export class AuthService implements IAuthService {
     private authRepository: IAuthRepository;
     private hashProvider: IHashProvider;
     private tokenProvider: ITokenProvider;
+    private randomCodeService: IRandomCodeService;
+    private emailService: IEmailService;
 
     constructor(props: Props) {
         this.authRepository = props.authRepository;
         this.hashProvider = props.hashProvider;
         this.tokenProvider = props.tokenProvider;
+        this.randomCodeService = props.randomCodeService;
+        this.emailService = props.emailService;
     }
 
     async createUser(data: CreateUserDTO): Promise<UserDTO> {
@@ -35,12 +45,20 @@ export class AuthService implements IAuthService {
 
         const toCreate: CreateUserDTO = {
             ...data,
+            email_verification_token: this.randomCodeService.generate(6),
+            email_verification_expires_at: DateTime.now().plus({ hours: 1 }).toJSDate(),
             password: hashedPassword,
         };
 
         const user = await this.authRepository.createUser(toCreate);
 
         delete user.password;
+
+        await this.emailService.sendEmail({
+            to: user.email,
+            subject: 'Bem vindo ao nosso aplicativo!',
+            html: welcomeEmailTemplate(user.name, toCreate.email_verification_token!)
+        });
 
         return user;
     }
