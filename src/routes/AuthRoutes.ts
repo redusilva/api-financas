@@ -1,7 +1,7 @@
 import express from 'express';
 import { AuthExpressController } from '../controllers/AuthExpressController';
 import { AuthService } from '../services/AuthService';
-import { AuthPgRepository } from '../repositories/AuthPgRepository';
+import { UserPgRepository } from '../repositories/UserPgRepository';
 import { validate } from '../middlewares/validate';
 import { CreateUserSchema } from '../schemas/CreateUserSchema';
 import { PgTransactionManager } from '../database/PgTransactionManager';
@@ -11,10 +11,11 @@ import { BcryptHashProviderService } from '../services/BcryptyHashProviderServic
 import { JwtProviderService } from '../services/JwtProviderService';
 import { EmailService } from '../services/EmailService';
 import { CryptoCodeService } from '../services/CryptoCodeService';
+import { ValidateUserEmailSchema } from '../schemas/ValidateUserEmailSchema';
 
 const router = express.Router();
 
-const authRepository = new AuthPgRepository();
+const authRepository = new UserPgRepository();
 const trx = new PgTransactionManager();
 const bcryptHashProvider = new BcryptHashProviderService();
 const jwtTokenProvider = new JwtProviderService();
@@ -35,6 +36,8 @@ const authController = new AuthExpressController({
 router.post('/login', validate(LoginUserSchema), (req, res) => authController.login(req, res));
 
 router.post('/refresh', validate(ValidateRefreshTokenSchema), (req, res) => authController.refreshToken(req, res));
+
+router.post('/validate-email', validate(ValidateUserEmailSchema), (req, res) => authController.validateEmail(req, res));
 
 router.post('/', validate(CreateUserSchema), (req, res) => authController.createUser(req, res));
 

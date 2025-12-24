@@ -6,4 +6,6 @@ export interface IAuthService {
     createUser(data: CreateUserDTO): Promise<UserDTO>;
     login(email: string, password: string): Promise<LoginReturnDTO>;
     refreshToken(token: string): Promise<LoginReturnDTO>;
+    validateEmail(userId: number, token: string): Promise<UserDTO>;
+    _buildPublicUserData(user: UserDTO): Partial<UserDTO>;
 }

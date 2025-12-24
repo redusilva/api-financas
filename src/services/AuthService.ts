@@ -1,4 +1,4 @@
-import { IAuthRepository } from "../interfaces/IAuthRepository";
+import { IUserRepository } from "../interfaces/IUserRepository";
 import { IAuthService } from "../interfaces/IAuthService";
 import { CreateUserDTO } from "../types/CreateUserDTO";
 import { UserDTO } from "../types/UserDTO";
@@ -13,7 +13,7 @@ import { welcomeEmailTemplate } from "../utils/mailTemplates";
 import { DateTime } from 'luxon';
 
 type Props = {
-    authRepository: IAuthRepository;
+    authRepository: IUserRepository;
     hashProvider: IHashProvider;
     tokenProvider: ITokenProvider;
     randomCodeService: IRandomCodeService;
@@ -21,7 +21,7 @@ type Props = {
 }
 
 export class AuthService implements IAuthService {
-    private authRepository: IAuthRepository;
+    private authRepository: IUserRepository;
     private hashProvider: IHashProvider;
     private tokenProvider: ITokenProvider;
     private randomCodeService: IRandomCodeService;
@@ -52,15 +52,13 @@ export class AuthService implements IAuthService {
 
         const user = await this.authRepository.createUser(toCreate);
 
-        delete user.password;
-
         await this.emailService.sendEmail({
             to: user.email,
             subject: 'Bem vindo ao nosso aplicativo!',
             html: welcomeEmailTemplate(user.name, toCreate.email_verification_token!)
         });
 
-        return user;
+        return this._buildPublicUserData(user) as UserDTO;
     }
 
     async login(email: string, password: string): Promise<LoginReturnDTO> {
@@ -127,5 +125,54 @@ export class AuthService implements IAuthService {
             accessToken: newAccessToken,
             refreshToken: newRefreshToken
         };
+    }
+
+    async validateEmail(userId: number, token: string): Promise<UserDTO> {
+        const user = await this.authRepository.findByid(userId);
+        if (!user) {
+            throw new AppError('Invalid or expired email verification token', 400);
+        }
+
+        if (user.email_verified) {
+            throw new AppError('Email is already verified', 400);
+        }
+
+        if (!user.email_verification_token || user.email_verification_token !== token) {
+            throw new AppError('Invalid email verification token', 400);
+        }
+
+        if (!user.email_verification_expires_at) {
+            throw new AppError('Email verification token expiration date is missing', 400);
+        }
+
+        const now = DateTime.now().toUTC();
+        const tokenExpiry = DateTime.fromJSDate(user.email_verification_expires_at).toUTC();
+        const isExpired = now > tokenExpiry;
+
+        if (isExpired) {
+            throw new AppError('Email verification token has expired', 400);
+        }
+
+        const updatedUser = await this.authRepository.updateUser({
+            ...user,
+            email_verified: true,
+            email_verification_token: null,
+            email_verification_expires_at: null,
+        });
+
+        return this._buildPublicUserData(updatedUser) as UserDTO;
+    }
+
+    _buildPublicUserData(user: UserDTO): Partial<UserDTO> {
+        return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role_id: user.role_id,
+            status_id: user.status_id,
+            email_verified: user.email_verified,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
+        }
     }
 }

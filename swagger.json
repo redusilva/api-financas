@@ -50,6 +50,14 @@
                         "format": "date-time"
                     }
                 }
+            },
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                }
             }
         }
     },
@@ -59,12 +67,13 @@
         }
     ],
     "paths": {
-        "/users": {
+        "/auth": {
             "post": {
                 "tags": [
-                    "Users"
+                    "Auth"
                 ],
                 "summary": "Cria um novo usuário",
+                "description": "API utilizada para criar um novo usuário no sistema. Requer nome, email, senha (mínimo 8 caracteres), role_id e status_id.",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -81,23 +90,32 @@
                                 "properties": {
                                     "name": {
                                         "type": "string",
-                                        "example": "teste"
+                                        "example": "Fulano de Tal",
+                                        "description": "Nome do usuário (não pode ser vazio)"
                                     },
                                     "email": {
                                         "type": "string",
-                                        "example": "user@example.com"
+                                        "format": "email",
+                                        "example": "user@example.com",
+                                        "description": "Email válido do usuário"
                                     },
                                     "password": {
                                         "type": "string",
-                                        "example": "123456"
+                                        "minLength": 8,
+                                        "example": "senha12345",
+                                        "description": "Senha com no mínimo 8 caracteres"
                                     },
                                     "role_id": {
                                         "type": "integer",
-                                        "example": 1
+                                        "minimum": 1,
+                                        "example": 1,
+                                        "description": "ID do papel/função do usuário (inteiro positivo)"
                                     },
                                     "status_id": {
                                         "type": "integer",
-                                        "example": 1
+                                        "minimum": 1,
+                                        "example": 1,
+                                        "description": "ID do status do usuário (inteiro positivo)"
                                     }
                                 }
                             }
@@ -120,6 +138,300 @@
                                             "$ref": "#/components/schemas/User"
                                         }
                                     }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados inválidos ou usuário já existe",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "summary": "Faz login do usuário",
+                "description": "API utilizada para autenticar o usuário e iniciar uma sessão. Requer email válido e senha com no mínimo 8 caracteres.",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com",
+                                        "description": "Email válido do usuário"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 8,
+                                        "example": "senha12345",
+                                        "description": "Senha com no mínimo 8 caracteres"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login bem-sucedido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Login successful"
+                                        },
+                                        "access_token": {
+                                            "type": "string",
+                                            "description": "Token de acesso JWT"
+                                        },
+                                        "refresh_token": {
+                                            "type": "string",
+                                            "description": "Token de atualização JWT"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Credenciais inválidas ou dados incorretos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Não autorizado - email ou senha incorretos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "summary": "Atualiza o token do usuário",
+                "description": "API utilizada para atualizar o token de autenticação do usuário usando o refresh token.",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "refresh_token"
+                                ],
+                                "properties": {
+                                    "refresh_token": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                                        "description": "Refresh token válido e não vazio"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token atualizado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Token refreshed successfully"
+                                        },
+                                        "access_token": {
+                                            "type": "string",
+                                            "description": "Novo token de acesso JWT"
+                                        },
+                                        "refresh_token": {
+                                            "type": "string",
+                                            "description": "Novo token de atualização JWT"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Refresh token inválido ou vazio",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Não autorizado - token expirado ou inválido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/validate-email": {
+            "post": {
+                "summary": "Valida o email do usuário",
+                "description": "API utilizada para validar o email do usuário usando um token de validação enviado por email.",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "user_id",
+                                    "token"
+                                ],
+                                "properties": {
+                                    "user_id": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "example": 1,
+                                        "description": "ID do usuário (número inteiro positivo)"
+                                    },
+                                    "token": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "example": "abc123def456",
+                                        "description": "Token de validação válido e não vazio"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Email validado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Email validated successfully"
+                                        },
+                                        "user_id": {
+                                            "type": "integer",
+                                            "example": 1,
+                                            "description": "ID do usuário cujo email foi validado"
+                                        },
+                                        "email_verified": {
+                                            "type": "boolean",
+                                            "example": true,
+                                            "description": "Indica se o email do usuário foi verificado"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados inválidos - user_id ou token incorretos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Usuário não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
                                 }
                             }
                         }

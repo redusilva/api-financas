@@ -30,9 +30,7 @@ export class AuthExpressController implements IAuthController {
             });
         } catch (error) {
             console.error('Error during user creation:', error);
-            return res.status(500).json({
-                message: 'Internal server error',
-            });
+            throw error;
         }
     }
 
@@ -48,21 +46,39 @@ export class AuthExpressController implements IAuthController {
             });
         } catch (error) {
             console.error('Error during login:', error);
-            return res.status(500).json({
-                message: 'Internal server error',
-            });
+            throw error;
         }
     }
 
     async refreshToken(req: Request, res: Response): Promise<any> {
+        try {
+            const refreshToken = req.body.refresh_token;
+            const authData = await this.authService.refreshToken(refreshToken);
 
-        const refreshToken = req.body.refresh_token;
-        const authData = await this.authService.refreshToken(refreshToken);
+            return res.status(200).json({
+                message: 'Token refreshed successfully',
+                access_token: authData.accessToken,
+                refresh_token: authData.refreshToken,
+            });
+        } catch (error) {
+            console.error('Error during token refresh:', error);
+            throw error;
+        }
+    }
 
-        return res.status(200).json({
-            message: 'Token refreshed successfully',
-            access_token: authData.accessToken,
-            refresh_token: authData.refreshToken,
-        });
+    async validateEmail(req: Request, res: Response): Promise<any> {
+        try {
+            const { user_id: userId, token } = req.body;
+            const validUser = await this.authService.validateEmail(userId, token);
+
+            return res.status(200).json({
+                message: 'Email validation result',
+                user_id: validUser.id,
+                email_verified: validUser.email_verified,
+            });
+        } catch (error) {
+            console.error('Error during email validation:', error);
+            throw error;
+        }
     }
 }
